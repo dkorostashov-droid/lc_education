@@ -1,14 +1,36 @@
-import os, json, pathlib, httpx, asyncio
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
+import os
+import json
+import pathlib
+import httpx
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    ReplyKeyboardMarkup,
+    KeyboardButton,
+)
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+    filters,
+)
 
+# -------------------- ENV --------------------
 API_BASE = os.getenv("API_BASE", "http://localhost:8000")
 FILES_BASE = os.getenv("FILES_BASE", f"{API_BASE}/files")
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-ALLOWED_CHATS = set(json.loads(os.getenv("ALLOWED_CHATS", "[]")))
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+try:
+    ALLOWED_CHATS = set(json.loads(os.getenv("ALLOWED_CHATS", "[]")))
+except Exception:
+    ALLOWED_CHATS = set()
 ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
 
+# -------------------- DATA --------------------
 PROMO_DOCS = {
+    # Базові матеріали
     "LC Waikiki Math (UA)": "LC Waikiki Math_Ukr.pdf",
     "Модуль 1 — Склад": "Module 1_Stockroom V2.0_UA.pdf",
     "Модуль 2 — Продажі та запаси": "Module 2_Sales & Stock Managment V2.0_UA.pdf",
@@ -18,16 +40,19 @@ PROMO_DOCS = {
     "Stockroom Process Manual": "Stockroom Process Manual_UKR.pdf",
     "Welcome Book": "Welcome Book_2020_UA_A4-1.pdf",
 
+    # 2nd Store Manager
     "2nd SM — Road Map": "Road Map_SM_UKR 1.pdf",
     "2nd SM — Introduction": "Promotion Training Program Introduction (for Second Store Manager candidates) UKR 1.pdf",
     "2nd SM — E-learning list": "e-learning list for Second Store Managers UKR 1.pdf",
     "2nd SM — On-the-Job Checklists": "On the Job Checklists (Second Store Manager) UKR 2.pdf",
 
+    # Section Manager
     "Section — Road Map": "PP Road Map_Section Manager_UKR 1.pdf",
     "Section — Introduction": "Promotion Training Program Introduction (for Section Manager candidates)_UKR 1.pdf",
     "Section — E-learning list": "e-learning list for Section Managers_UKR 1.pdf",
     "Section — On-the-Job Checklists": "On the Job Checklists (Section Manager)_UKR 4.pdf",
 
+    # Head of Stockroom
     "HOS — Road Map": "PP Road Map_Head of Stock_UKR 1.pdf",
     "HOS — Introduction": "Promotion Training Program Intorduction (for HOC & HOS candidates)_UKR 1.pdf",
     "HOS — E-learning list": "e-learning list for HOS_UKR 1.pdf",
@@ -82,6 +107,7 @@ PROMO_MAP = {
     },
 }
 
+# Якорі сторінок (додаються як #page=N до URL)
 PAGE_ANCHORS = {
     "2nd Store Manager": {
         "План": {"2nd SM — Road Map": 1, "2nd SM — Introduction": 1},
@@ -106,97 +132,7 @@ PAGE_ANCHORS = {
     },
 }
 
-MAIN_KB = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="🧠 /ask"), KeyboardButton(text="🔎 /search")],
-        [KeyboardButton(text="📚 Файли"), KeyboardButton(text="⬆️ Промоушен")],
-    ], resize_keyboard=True
-)
-
-async def guard(update: Update) -> bool:
-    if not ALLOWED_CHATS:
-        return True
-    return update.effective_chat.id in ALLOWED_CHATS
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await guard(update):
-        return await update.message.reply_text("⛔️ Доступ обмежено.")
-    await update.message.reply_text(
-        "Привіт! Я бот для промо-доків.
-"
-        "/ask <питання> — Q&A по PDF
-"
-        "/search <запит> — пошук фрагментів
-"
-        "/reindex — перебудувати індекс (адмінам)",
-        reply_markup=MAIN_KB
-    )
-
-async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await guard(update): return
-    question = " ".join(context.args).strip()
-    if not question:
-        return await update.message.reply_text("Приклад: /ask як підготувати промо-пакет")
-    async with httpx.AsyncClient(timeout=60) as c:
-        r = await c.post(f"{API_BASE}/chat", json={"question": question, "top_k": 6})
-        r.raise_for_status()
-        data = r.json()
-    ans = data.get("answer","(нема відповіді)")
-    sources = data.get("sources", [])
-    buttons = []
-    for s in sources[:3]:
-        label = f"{s['doc_id']} p.{s['page']}"
-        url = s.get("source_path")
-        if url and not url.startswith("http"):
-            fname = pathlib.Path(url).name
-            url = f"{FILES_BASE}/{fname}#page={int(s['page'])}"
-        if url and url.startswith("http"):
-            buttons.append([InlineKeyboardButton(text=label, url=url)])
-    reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
-    await update.message.reply_text(ans, reply_markup=reply_markup, disable_web_page_preview=True)
-
-async def search(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await guard(update): return
-    query = " ".join(context.args).strip()
-    if not query:
-        return await update.message.reply_text("Приклад: /search критерії оцінювання рівня L5")
-    async with httpx.AsyncClient(timeout=60) as c:
-        r = await c.post(f"{API_BASE}/search", json={"question": query, "top_k": 6})
-        r.raise_for_status()
-        res = r.json().get("results", [])
-    if not res:
-        return await update.message.reply_text("Нічого не знайдено")
-    lines = []
-    for i, it in enumerate(res, 1):
-        lines.append(f"{i}. {it['doc_id']} p.{int(it['page'])}: {it['text'][:180]}…")
-    await update.message.reply_text("\n".join(lines))
-
-async def files_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await guard(update): return
-    rows = []
-    for title, rel in PROMO_DOCS.items():
-        url = f"{FILES_BASE}/{rel}"
-        rows.append([InlineKeyboardButton(text=title, url=url)])
-    kb = InlineKeyboardMarkup(rows)
-    await update.message.reply_text("📚 Прямий доступ до файлів:", reply_markup=kb, disable_web_page_preview=True)
-
-async def promo_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await guard(update): return
-    rows = [[InlineKeyboardButton(text=role, callback_data=f"promo:{role}")] for role, _ in PROMO_ROLES]
-    kb = InlineKeyboardMarkup(rows)
-    await update.message.reply_text("⬆️ Обери напрям промоушену:", reply_markup=kb)
-
-async def on_promo_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await guard(update): return
-    query = update.callback_query
-    await query.answer()
-    role = query.data.split(":",1)[1]
-    rows = [[InlineKeyboardButton(text=tab, callback_data=f"promo_nav:{role}:{tab}")]
-            for tab in dict(PROMO_ROLES)[role]]
-    kb = InlineKeyboardMarkup(rows)
-    await query.edit_message_text(text=f"⬆️ {role}: оберіть розділ")
-    await query.message.reply_text("Меню матеріалів:", reply_markup=kb, disable_web_page_preview=True)
-
+# Чек-листи (короткі, показуються при відкритті вкладки "Модулі")
 CHECKLISTS = {
     ("2nd Store Manager", "Модулі"): [
         "Опанувати математику магазину (LCM, Cover, Turnover)",
@@ -221,8 +157,120 @@ CHECKLISTS = {
     ],
 }
 
+# -------------------- UI --------------------
+MAIN_KB = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="🧠 /ask"), KeyboardButton(text="🔎 /search")],
+        [KeyboardButton(text="📚 Файли"), KeyboardButton(text="⬆️ Промоушен")],
+    ],
+    resize_keyboard=True,
+)
+
+# -------------------- HELPERS --------------------
+async def guard(update: Update) -> bool:
+    """Якщо ALLOWED_CHATS порожній — пускаємо всіх. Інакше лише whitelisted."""
+    if not ALLOWED_CHATS:
+        return True
+    return update.effective_chat.id in ALLOWED_CHATS
+
+# -------------------- HANDLERS --------------------
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await guard(update):
+        return await update.message.reply_text("⛔️ Доступ обмежено.")
+
+    text = (
+        "Привіт! Я бот для промо-доків.\n"
+        "/ask <питання> — Q&A по PDF\n"
+        "/search <запит> — пошук фрагментів\n"
+        "/reindex — перебудувати індекс (адмінам)"
+    )
+    await update.message.reply_text(text, reply_markup=MAIN_KB)
+
+async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await guard(update):
+        return
+    question = " ".join(context.args).strip()
+    if not question:
+        return await update.message.reply_text("Приклад: /ask як підготувати промо-пакет")
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as c:
+            r = await c.post(f"{API_BASE}/chat", json={"question": question, "top_k": 6})
+            r.raise_for_status()
+            data = r.json()
+    except Exception as e:
+        return await update.message.reply_text(f"Помилка звернення до API: {e}")
+
+    ans = data.get("answer", "(нема відповіді)")
+    sources = data.get("sources", [])
+    buttons = []
+    for s in sources[:3]:
+        label = f"{s.get('doc_id','?')} p.{int(s.get('page', 1))}"
+        url = s.get("source_path")
+        if url and not str(url).startswith("http"):
+            fname = pathlib.Path(str(url)).name
+            url = f"{FILES_BASE}/{fname}#page={int(s.get('page', 1))}"
+        if url and str(url).startswith("http"):
+            buttons.append([InlineKeyboardButton(text=label, url=url)])
+    reply_markup = InlineKeyboardMarkup(buttons) if buttons else None
+    await update.message.reply_text(ans, reply_markup=reply_markup, disable_web_page_preview=True)
+
+async def search_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await guard(update):
+        return
+    query = " ".join(context.args).strip()
+    if not query:
+        return await update.message.reply_text("Приклад: /search інвентаризація Sample Counting")
+    try:
+        async with httpx.AsyncClient(timeout=60) as c:
+            r = await c.post(f"{API_BASE}/search", json={"question": query, "top_k": 6})
+            r.raise_for_status()
+            res = r.json().get("results", [])
+    except Exception as e:
+        return await update.message.reply_text(f"Помилка звернення до API: {e}")
+
+    if not res:
+        return await update.message.reply_text("Нічого не знайдено")
+    lines = []
+    for i, it in enumerate(res, 1):
+        page = int(it.get("page", 1))
+        doc_id = it.get("doc_id", "?")
+        text = (it.get("text", "") or "")[:180].replace("\n", " ")
+        lines.append(f"{i}. {doc_id} p.{page}: {text}…")
+    await update.message.reply_text("\n".join(lines))
+
+async def files_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await guard(update):
+        return
+    rows = []
+    for title, rel in PROMO_DOCS.items():
+        url = f"{FILES_BASE}/{rel}"
+        rows.append([InlineKeyboardButton(text=title, url=url)])
+    kb = InlineKeyboardMarkup(rows)
+    await update.message.reply_text("📚 Прямий доступ до файлів:", reply_markup=kb, disable_web_page_preview=True)
+
+async def promo_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await guard(update):
+        return
+    rows = [[InlineKeyboardButton(text=role, callback_data=f"promo:{role}")] for role, _ in PROMO_ROLES]
+    kb = InlineKeyboardMarkup(rows)
+    await update.message.reply_text("⬆️ Обери напрям промоушену:", reply_markup=kb)
+
+async def on_promo_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await guard(update):
+        return
+    query = update.callback_query
+    await query.answer()
+    role = query.data.split(":", 1)[1]
+    rows = [[InlineKeyboardButton(text=tab, callback_data=f"promo_nav:{role}:{tab}")]
+            for tab in dict(PROMO_ROLES)[role]]
+    kb = InlineKeyboardMarkup(rows)
+    await query.edit_message_text(text=f"⬆️ {role}: оберіть розділ")
+    await query.message.reply_text("Меню матеріалів:", reply_markup=kb, disable_web_page_preview=True)
+
 async def on_promo_nav(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await guard(update): return
+    if not await guard(update):
+        return
     query = update.callback_query
     await query.answer()
     _, role, tab = query.data.split(":", 2)
@@ -231,7 +279,7 @@ async def on_promo_nav(update: Update, context: ContextTypes.DEFAULT_TYPE):
     header = f"📂 {role} — {tab}"
     if checklist:
         bullets = "\n".join([f"• {x}" for x in checklist])
-        await query.edit_message_text(text=f"{header}\n\nКороткий чек‑лист:\n{bullets}")
+        await query.edit_message_text(text=f"{header}\n\nКороткий чек-лист:\n{bullets}")
     else:
         await query.edit_message_text(text=header)
 
@@ -251,7 +299,8 @@ async def on_promo_nav(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text("Рекомендовані матеріали:", reply_markup=kb, disable_web_page_preview=True)
 
 async def reindex(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await guard(update): return
+    if not await guard(update):
+        return
     if ADMIN_CHAT_ID and update.effective_chat.id != ADMIN_CHAT_ID:
         return await update.message.reply_text("Команда лише для адміна.")
     os.system("python ingest.py")
@@ -265,7 +314,8 @@ async def on_text_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await promo_menu(update, context)
 
 async def on_doc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await guard(update): return
+    if not await guard(update):
+        return
     doc = update.message.document
     if not doc or not doc.file_name.lower().endswith(".pdf"):
         return await update.message.reply_text("Потрібен PDF")
@@ -277,15 +327,23 @@ async def on_doc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("✅ Готово")
 
 def main():
+    # Додаткові логи для надійності
+    print("[bot] starting application...", flush=True)
+    if not BOT_TOKEN:
+        print("[bot] ERROR: TELEGRAM_BOT_TOKEN is empty", flush=True)
+        raise SystemExit(1)
+
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ask", ask))
-    app.add_handler(CommandHandler("search", search))
+    app.add_handler(CommandHandler("search", search_cmd))
     app.add_handler(CommandHandler("reindex", reindex))
     app.add_handler(CallbackQueryHandler(on_promo_role, pattern=r"^promo:"))
     app.add_handler(CallbackQueryHandler(on_promo_nav, pattern=r"^promo_nav:"))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_text_buttons))
     app.add_handler(MessageHandler(filters.Document.PDF, on_doc))
+
+    print("[bot] polling...", flush=True)
     app.run_polling(close_loop=False)
 
 if __name__ == "__main__":
