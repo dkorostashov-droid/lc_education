@@ -1,58 +1,77 @@
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
+import os
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from retriever import HybridRetriever
 from llm import LLM
 
+# 🔧 гарантуємо існування директорій перед підключенням StaticFiles
+os.makedirs("docs", exist_ok=True)
+os.makedirs("store", exist_ok=True)
+
 app = FastAPI(title="PromoDocs API")
+
+# Дозволяємо CORS (щоб бот і веб могли звертатися)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# static files: /files -> docs/
+# 📂 публікуємо PDF через /files/
 app.mount("/files", StaticFiles(directory="docs"), name="files")
 
-retriever = None
-llm = LLM()
+# Ініціалізація компонентів
+retriever = HybridRetriever(store_dir="store")
+llm = LLM(provider=os.getenv("LLM_PROVIDER", "openai"), api_key=os.getenv("LLM_API_KEY", ""))
 
-class ChatRequest(BaseModel):
+# ---- MODELS ----
+class AskRequest(BaseModel):
     question: str
-    top_k: int = 6
 
+# ---- ROUTES ----
 @app.get("/health")
 def health():
-    return {"status":"ok"}
+    return {"status": "ok"}
 
-def ensure_retriever():
-    global retriever
-    if retriever is None:
-        retriever = HybridRetriever()
-    return retriever
+@app.post("/upload")
+async def upload(file: UploadFile = File(...)):
+    """Приймає PDF, зберігає і додає до індексу."""
+    try:
+        filename = file.filename
+        path = os.path.join("docs", filename)
+        with open(path, "wb") as f:
+            f.write(await file.read())
+        retriever.add_document(path)
+        return {"message": f"{filename} uploaded and indexed"}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
-@app.post("/search")
-def search(q: ChatRequest):
-    r = ensure_retriever().search(q.question, q.top_k)
-    return {"results": r.to_dict(orient="records")}
+@app.post("/ask")
+async def ask(request: AskRequest):
+    """Питання до бази документів."""
+    try:
+        docs = retriever.search(request.question)
+        answer = llm.answer(request.question, docs)
+        return {"answer": answer, "sources": [d["source"] for d in docs]}
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
 
-@app.post("/chat")
-async def chat(q: ChatRequest):
-    r = ensure_retriever().search(q.question, q.top_k)
-    context = "\n\n".join([f"[p.{int(row.page)} {row.doc_id}] {row.text}" for _, row in r.iterrows()])
-    prompt = f"""
-Відповідай на питання користувача українською, використовуючи лише наведений контекст.
-Якщо відповіді немає у контексті — скажи про це.
-Додай посилання на джерела у форматі: doc_id p.page.
+@app.post("/reindex")
+async def reindex():
+    """Повне переіндексування."""
+    retriever.reindex("docs")
+    return {"message": "Reindex complete"}
 
-Користувач: {q.question}
-Контекст:\n{context}
-"""
-    ans = await llm.answer(prompt)
-    sources = [
-        {"doc_id": str(row.doc_id), "page": int(row.page), "source_path": str(row.source_path)}
-        for _, row in r.iterrows()
-    ]
-    return {"answer": ans, "sources": sources}
+@app.get("/")
+def root():
+    return {"message": "PromoDocs API is running"}
+
+# ---- DEBUG RUN ----
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
