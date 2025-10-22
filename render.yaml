@@ -22,10 +22,7 @@ services:
         value: "0"
       - key: ALLOWED_CHATS
         value: "[]"
-    disks:
-      - name: data
-        mountPath: /app/store
-        sizeGB: 2
-      - name: docs
-        mountPath: /app/docs
-        sizeGB: 2
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 2
