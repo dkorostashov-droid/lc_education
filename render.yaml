@@ -1,0 +1,34 @@
+services:
+- type: web
+name: promodocs
+env: docker
+plan: starter
+autoDeploy: true
+dockerfilePath: ./Dockerfile
+branch: main
+healthCheckPath: /health
+envVars:
+- key: TELEGRAM_BOT_TOKEN
+sync: false
+- key: LLM_PROVIDER
+value: openai
+- key: LLM_API_KEY
+sync: false
+- key: FILES_BASE
+# Після першого деплою Render підставляє URL сервісу.
+# Можеш вручну встановити на https://<твій-сервіс>.onrender.com/files
+value: "https://RENDER_URL_PLACEHOLDER/files"
+- key: API_BASE
+value: "https://RENDER_URL_PLACEHOLDER"
+- key: ADMIN_CHAT_ID
+value: "0"
+- key: ALLOWED_CHATS
+value: "[]"
+disks:
+- name: data
+mountPath: /app/store
+sizeGB: 2
+# Для збереження PDF (опційно окремий диск), або тримати в репо
+- name: docs
+mountPath: /app/docs
+sizeGB: 2
