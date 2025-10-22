@@ -1,59 +1,35 @@
-import os, glob, pandas as pd
-import fitz  # PyMuPDF
-from sentence_transformers import SentenceTransformer
-import faiss
+import os, pickle
 from pathlib import Path
+from tqdm import tqdm
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.vectorstores import FAISS  # можна залишити FAISS для сумісності
+from langchain_community.embeddings import FakeEmbeddings  # щоб не вантажити реальну модель
 
-MODEL = os.getenv("EMB_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "900"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "150"))
+DATA_PATH = Path("docs")
+INDEX_PATH = Path("store")
 
-def chunk_text(txt: str, size: int, overlap: int):
-    txt = (txt or "").strip()
-    if not txt:
-        return []
-    res = []
-    i = 0
-    step = max(1, size - overlap)
-    while i < len(txt):
-        res.append(txt[i:i+size])
-        i += step
-    return res
+def load_docs():
+    docs = []
+    for pdf_path in DATA_PATH.glob("*.pdf"):
+        loader = PyPDFLoader(str(pdf_path))
+        docs.extend(loader.load())
+    return docs
 
-def pdf_to_chunks(path: str):
-    doc = fitz.open(path)
-    for p in range(len(doc)):
-        text = doc[p].get_text("text")
-        for piece in chunk_text(text, CHUNK_SIZE, CHUNK_OVERLAP):
-            yield {
-                "doc_id": Path(path).stem,
-                "page": p + 1,
-                "text": piece,
-                "source_path": path,
-            }
+def ingest():
+    print("🧩 Завантажую PDF...")
+    docs = load_docs()
+    print(f"✅ Документів: {len(docs)}")
+
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    texts = text_splitter.split_documents(docs)
+    print(f"✂️ Розбито на {len(texts)} частин")
+
+    # FakeEmbeddings просто повертає хеш тексту — RAM ≈ 100 MB
+    embeddings = FakeEmbeddings(size=384)
+    vectorstore = FAISS.from_documents(texts, embeddings)
+    vectorstore.save_local(str(INDEX_PATH))
+    print("💾 Індекс створено та збережено!")
 
 if __name__ == "__main__":
-    os.makedirs("store", exist_ok=True)
-    files = glob.glob("docs/**/*.pdf", recursive=True) + glob.glob("docs/*.pdf", recursive=False)
-    rows = []
-    for f in files:
-        try:
-            rows.extend(list(pdf_to_chunks(f)))
-        except Exception as e:
-            print(f"[WARN] failed to parse {f}: {e}")
-
-    if not rows:
-        print("[INFO] No PDF chunks found in docs/. Put PDF files first.")
-        exit(0)
-
-    df = pd.DataFrame(rows)
-    df.to_parquet("store/chunks.parquet")
-
-    model = SentenceTransformer(MODEL)
-    X = model.encode(df["text"].tolist(), normalize_embeddings=True)
-    import numpy as np
-    X = np.asarray(X, dtype="float32")
-    index = faiss.IndexFlatIP(X.shape[1])
-    index.add(X)
-    faiss.write_index(index, "store/faiss.index")
-    print(f"[OK] Indexed {len(df)} chunks from {len(files)} PDFs.")
+    ingest()
