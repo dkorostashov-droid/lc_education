@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: promodocs-lite
+    env: docker
+    plan: starter
+    autoDeploy: true
+    dockerfilePath: ./Dockerfile
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: API_BASE
+        value: "https://promodocs-lite.onrender.com"
+      - key: FILES_BASE
+        value: "https://promodocs-lite.onrender.com/files"
+      - key: ADMIN_CHAT_ID
+        value: "0"
+      - key: ALLOWED_CHATS
+        value: "[]"
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1
