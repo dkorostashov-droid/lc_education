@@ -9,3 +9,5 @@ python-dotenv
 pymupdf
 httpx
 pyjwt
+python-telegram-bot==20.8
+supervisor
