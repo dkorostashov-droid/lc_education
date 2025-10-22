@@ -15,9 +15,9 @@ services:
       - key: LLM_API_KEY
         sync: false
       - key: FILES_BASE
-        value: "https://RENDER_URL_PLACEHOLDER/files"
+        value: "https://promodocs.onrender.com/files"
       - key: API_BASE
-        value: "https://RENDER_URL_PLACEHOLDER"
+        value: "https://promodocs.onrender.com"
       - key: ADMIN_CHAT_ID
         value: "0"
       - key: ALLOWED_CHATS
