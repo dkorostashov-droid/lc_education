@@ -32,18 +32,9 @@ try:
 except Exception:
     ADMIN_CHAT_ID = 0
 
-# ---------- МАПІНГ ФАЙЛІВ (назва в меню -> фактична назва PDF) ----------
+# ---------- КАРТИ ДОКУМЕНТІВ ----------
+# 1) ПРОМО (видимі тільки в меню Промоушен, у "📚 Файли" НЕ показуємо)
 PROMO_DOCS: Dict[str, str] = {
-    # Загальні
-    "LC Waikiki Math (UA)": "LC Waikiki Math_Ukr.pdf",
-    "Модуль 1 — Склад": "Module 1_Stockroom V2.0_UA.pdf",
-    "Модуль 2 — Продажі та запаси": "Module 2_Sales & Stock Managment V2.0_UA.pdf",
-    "Модуль 3 — Каса": "Module 3_Cashpoint V2.0_UA.pdf",
-    "Модуль 4 — Бекофіс": "Module 4_Backoffice V2.0_UA.pdf",
-    "RS Reports (звіти)": "RS Reports_UKR.pdf",
-    "Stockroom Process Manual": "Stockroom Process Manual_UKR.pdf",
-    "Welcome Book": "Welcome Book_2020_UA_A4-1.pdf",
-
     # 2nd Store Manager
     "2nd SM — Road Map": "Road Map_SM_UKR 1.pdf",
     "2nd SM — Introduction": "Promotion Training Program Introduction (for Second Store Manager candidates) UKR 1.pdf",
@@ -63,6 +54,41 @@ PROMO_DOCS: Dict[str, str] = {
     "HOS — On-the-Job Checklists": "On the job Checklists (Head of Stockroom)_UKR 1.pdf",
 }
 
+# 2) ФАЙЛИ (видимі у "📚 Файли")
+FILES_DOCS: Dict[str, str] = {
+    # Модулі (окремою категорією)
+    "Module 1_Stockroom V2.0_UA": "Module 1_Stockroom V2.0_UA.pdf",
+    "Module 2_Sales & Stock Managment V2.0_UA": "Module 2_Sales & Stock Managment V2.0_UA.pdf",
+    "Module 3_Cashpoint V2.0_UA": "Module 3_Cashpoint V2.0_UA.pdf",
+    "Module 4_Backoffice V2.0_UA": "Module 4_Backoffice V2.0_UA.pdf",
+
+    # Довідники
+    "LC Waikiki Math (UA)": "LC Waikiki Math_Ukr.pdf",
+    "RS Reports (звіти)": "RS Reports_UKR.pdf",
+    "Stockroom Process Manual": "Stockroom Process Manual_UKR.pdf",
+
+    # Welcome
+    "Welcome Book_2020_UA_A4-1": "Welcome Book_2020_UA_A4-1.pdf",
+}
+
+# 3) Категорії у "📚 Файли" (лише з FILES_DOCS)
+FILE_CATEGORIES: Dict[str, List[str]] = {
+    "Модулі": [
+        "Module 1_Stockroom V2.0_UA",
+        "Module 2_Sales & Stock Managment V2.0_UA",
+        "Module 3_Cashpoint V2.0_UA",
+        "Module 4_Backoffice V2.0_UA",
+    ],
+    "Довідники": [
+        "LC Waikiki Math (UA)",
+        "RS Reports (звіти)",
+        "Stockroom Process Manual",
+    ],
+    "Welcome для новачків": [
+        "Welcome Book_2020_UA_A4-1",
+    ],
+}
+
 # ---------- СТРУКТУРА ПРОМО (ролі -> вкладки) ----------
 PROMO_ROLES: List[Tuple[str, List[str]]] = [
     ("2nd Store Manager", ["План", "Модулі", "E-learning", "Іспити"]),
@@ -75,11 +101,11 @@ PROMO_MAP: Dict[str, Dict[str, List[str]]] = {
         "План": ["2nd SM — Road Map", "2nd SM — Introduction"],
         "Модулі": [
             "LC Waikiki Math (UA)",
-            "Модуль 2 — Продажі та запаси",
-            "Модуль 1 — Склад",
+            "Module 2_Sales & Stock Managment V2.0_UA",
+            "Module 1_Stockroom V2.0_UA",
             "RS Reports (звіти)",
-            "Модуль 3 — Каса",
-            "Модуль 4 — Бекофіс",
+            "Module 3_Cashpoint V2.0_UA",
+            "Module 4_Backoffice V2.0_UA",
         ],
         "E-learning": ["2nd SM — E-learning list", "2nd SM — On-the-Job Checklists"],
         "Іспити": [],
@@ -88,10 +114,10 @@ PROMO_MAP: Dict[str, Dict[str, List[str]]] = {
         "План": ["Section — Road Map", "Section — Introduction"],
         "Модулі": [
             "LC Waikiki Math (UA)",
-            "Модуль 2 — Продажі та запаси",
-            "Модуль 1 — Склад",
+            "Module 2_Sales & Stock Managment V2.0_UA",
+            "Module 1_Stockroom V2.0_UA",
             "RS Reports (звіти)",
-            "Модуль 3 — Каса",
+            "Module 3_Cashpoint V2.0_UA",
         ],
         "E-learning": ["Section — E-learning list", "Section — On-the-Job Checklists"],
         "Іспити": [],
@@ -100,19 +126,19 @@ PROMO_MAP: Dict[str, Dict[str, List[str]]] = {
         "План": ["HOS — Road Map", "HOS — Introduction"],
         "Модулі": [
             "Stockroom Process Manual",
-            "Модуль 1 — Склад",
+            "Module 1_Stockroom V2.0_UA",
             "RS Reports (звіти)",
             "LC Waikiki Math (UA)",
-            "Модуль 2 — Продажі та запаси",
-            "Модуль 3 — Каса",
-            "Модуль 4 — Бекофіс",
+            "Module 2_Sales & Stock Managment V2.0_UA",
+            "Module 3_Cashpoint V2.0_UA",
+            "Module 4_Backoffice V2.0_UA",
         ],
         "E-learning": ["HOS — E-learning list", "HOS — On-the-Job Checklists"],
         "Іспити": [],
     },
 }
 
-# ---------- ЯКОРІ СТОРІНОК (#page=) ДЛЯ ПОСИЛАНЬ ----------
+# ---------- ЯКОРІ СТОРІНОК (#page=) ----------
 PAGE_ANCHORS: Dict[str, Dict[str, Dict[str, int]]] = {
     "2nd Store Manager": {
         "План": {"2nd SM — Road Map": 1, "2nd SM — Introduction": 1},
@@ -141,92 +167,83 @@ MINI_GUIDES: Dict[Tuple[str, str], List[str]] = {
         "Ознайомся з Road Map та дедлайнами етапів.",
         "Зустрінься з SM/DSM: узгодь очікування та KPI.",
         "Склади особистий план навчання (щотижневі цілі).",
-        "Забронюй час для shadowing у ключових зонах магазину.",
-        "Веди простий трекер прогресу (Google Sheet/нотатник).",
+        "Забронюй shadowing у ключових зонах магазину.",
+        "Веди трекер прогресу (Google Sheet/нотатник).",
     ],
     ("2nd Store Manager", "Модулі"): [
-        "Розумій LCM/Cover/Turnover — базова математика магазину.",
-        "Ключові звіти RS: №3, 6, 18, 19, 25, 30, 62, 130 — вмій пояснити, що вони показують.",
-        "Склад: прийом, трансфери, SDUZ — без помилок і в строк.",
-        "Каса: X/Z, повернення, розбіжності — діємо по SOP.",
+        "LCM/Cover/Turnover — базова математика магазину.",
+        "Ключові звіти RS: №3, 6, 18, 19, 25, 30, 62, 130.",
+        "Склад: прийом/трансфери/SDUZ — без помилок і в строк.",
+        "Каса: X/Z, повернення, розбіжності — по SOP.",
         "Backoffice: документообіг і комунікація з HQ.",
-        "Щотижня — короткий самотест із модулів.",
     ],
     ("2nd Store Manager", "E-learning"): [
-        "Склади графік e-learning (30–45 хв на сесію, 3–4 рази/тиждень).",
-        "По кожному курсу — 3 тези, 1 застосування на зміні.",
-        "Перевір себе: короткий квіз або обговорення з наставником.",
-        "Заведи нотатки: скріни/приклади для команди.",
-        "Закрий усі модулі до дати промо-інтерв’ю.",
+        "Графік сесій: 30–45 хв, 3–4 рази/тиждень.",
+        "Після курсу — 3 тези + 1 застосування на зміні.",
+        "Короткий квіз чи обговорення з наставником.",
+        "Нотатки/скріни — ділись з командою.",
     ],
     ("2nd Store Manager", "Іспити"): [
         "Повтори ключові звіти та метрики магазину.",
-        "Пройди mock-інтерв’ю з SM/HR.",
-        "Підготуй 2–3 приклади «було/стало» з твоєї ділянки.",
-        "Зберіть фідбек від колег/наставника (1–2 цитати).",
-        "Прийди з пропозиціями: 3 поліпшення на наступний місяць.",
+        "Mock-інтерв’ю з SM/HR.",
+        "2–3 кейси «було/стало» з твоєї ділянки.",
+        "3 покращення на місяць — чіткий план.",
     ],
 
-    # Section
+    # Section Manager
     ("Section Manager", "План"): [
         "Узгодь з SM цілі секції (продаж, конверсія, AT/UPT).",
-        "Сплануй ротації на секції та ключові дні мерчу.",
-        "Домовся про shadowing з досвідченим SM.",
-        "Налаштуй чек-ін 1р/тиждень (15 хв) з SM по прогресу.",
-        "Веди чек-лист компетенцій (відмічай закриті пункти).",
+        "Сплануй ротації та ключові дні мерчу.",
+        "Shadowing з досвідченим SM.",
+        "Щотижневий чек-ін 15 хв із SM.",
+        "Веди чек-лист компетенцій.",
     ],
     ("Section Manager", "Модулі"): [
-        "Customer experience: альтернативні/додаткові продажі — тренуй сценарії.",
-        "Product knowledge: склади міні-каталог матеріалів/етикеток.",
+        "Customer experience: тренуй альтернативні/додаткові продажі.",
+        "Product knowledge: міні-каталог матеріалів/етикеток.",
         "Capacity & планограма: план секції, LEGO, календар мерчу.",
         "VM: стіни/столи/манекени, прайспоінти — щоденний контроль.",
-        "Каса: X/Z та повернення у складних кейсах.",
-        "HR-основи: onboarding новачка + графіки.",
+        "Каса: X/Z, повернення у складних кейсах.",
     ],
     ("Section Manager", "E-learning"): [
-        "Розбий навчання на короткі сесії (до 45 хв).",
-        "Після кожного курсу — мікро-ролеплей з колегою.",
-        "Витягуй 1 прийом, який впровадиш сьогодні на зміні.",
-        "Щотижня ділиться інсайтом із командою (5 хв).",
-        "Фіксуй завершені курси у трекері.",
+        "Сесії до 45 хв; по кожному курсу — 1 прийом у роботу.",
+        "Міні-ролеплей із колегою (5 хв).",
+        "Щотижня ділитись інсайтами з командою.",
+        "Відзначай у трекері завершені курси.",
     ],
     ("Section Manager", "Іспити"): [
-        "Підготуй порівняльні фото VM «до/після».",
-        "Покажи, як читати ключові звіти секції.",
-        "Опиши 2 кейси роботи з запереченнями клієнтів.",
-        "План на місяць: 3 дії, 3 метрики успіху.",
-        "Чітко сформулюй сильні сторони й зони росту.",
+        "Фотокейси VM «до/після».",
+        "Презентація читання ключових звітів секції.",
+        "2 кейси роботи з запереченнями клієнтів.",
+        "План на місяць: 3 дії та метрики успіху.",
     ],
 
     # HOS
     ("Head of Stockroom", "План"): [
-        "Узгодь із SM/HOS-менеджером метрики складу (точність, швидкість, втрати).",
-        "Склади календар поставок/інвентаризацій.",
+        "Узгодь метрики складу: точність, швидкість, втрати.",
+        "Календар поставок/інвентаризацій.",
         "Організуй зони: прийом, зберігання, видача, повернення.",
-        "Визнач регламент денних чеків і відповідальних.",
-        "Веди логи інцидентів (помилки, втрати, пошкодження).",
+        "Щоденні чеки та відповідальні.",
+        "Логи інцидентів: помилки/втрати/пошкодження.",
     ],
     ("Head of Stockroom", "Модулі"): [
-        "Прийом: звірка коробок/накладних, робота з екраном прийому.",
+        "Прийом: звірка коробок/накладних, екран прийому.",
         "Трансфери: внутрішні/міжмагазинні, контроль звіту №35.",
         "Облік: sample counting, відсутні розміри, мінусовий сток.",
         "Безпека: аларми, пожежна безпека, CCTV — щоденні перевірки.",
         "Звіти: №1, 22, 28, 55, 125, 133, 5003 — розумій і контролюй.",
-        "Комунікація із залом: швидка видача запитів.",
     ],
     ("Head of Stockroom", "E-learning"): [
-        "Склади план курсів під пікові дні (менше навантаження — більше навчання).",
-        "Після курсу — 1 покращення процесу (запиши у чек-лист).",
-        "Проведи міні-навчання для колеги (5–7 хв).",
-        "Зроби самоперевірку складу з чек-листом.",
-        "Закрий усі модулі до наступної великої поставки.",
+        "Плануй курси на менш завантажені дні.",
+        "Після курсу — 1 покращення процесу, зафіксуй у чек-листі.",
+        "Міні-навчання для колеги (5–7 хв).",
+        "Самоперевірки складу за чек-листом.",
     ],
     ("Head of Stockroom", "Іспити"): [
-        "Презентуй схему складу та регламенти.",
-        "Покажи кейс «помилка → виправлення → профілактика».",
-        "Підготуй дані: швидкість прийому, точність інвентаризації.",
+        "Схема складу та регламенти.",
+        "Кейс «помилка → виправлення → профілактика».",
+        "Метрики: швидкість прийому, точність інвентаризації.",
         "План покращень на квартал (3 дії, відповідальні, строки).",
-        "Фідбек від SM/кас/секцій — 2–3 короткі відгуки.",
     ],
 }
 
@@ -268,30 +285,67 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("⛔️ Доступ обмежено.")
     text = (
         "👋 Ласкаво просимо до *LC Waikiki Guide Bot*.\n\n"
-        "• **Файли** — усі гайдлайни та інструкції\n"
-        "• **Промоушен** — матеріали програми підвищення (3 позиції)\n\n"
+        "• **Файли** — категорії: *Модулі*, *Довідники*, *Welcome*\n"
+        "• **Промоушен** — програма для 3 позицій (з міні-гайдами)\n\n"
         "Надішліть PDF як документ — я додам його до бібліотеки."
     )
     await update.message.reply_text(text, parse_mode="Markdown", reply_markup=inline_home_kb())
 
-# --- Files page ---
-async def files_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# === 📚 Файли: головне меню категорій ===
+async def files_home(update: Update, context: ContextTypes.DEFAULT_TYPE, as_edit=False):
     if not await guard(update): return
+    rows = [[InlineKeyboardButton(cat, callback_data=f"files_cat:{cat}")] for cat in FILE_CATEGORIES.keys()]
+    rows.append([InlineKeyboardButton("🏠 На головну", callback_data="nav:home")])
+    text = "📚 Оберіть категорію файлів:"
+    if as_edit and update.callback_query:
+        await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(rows))
+    else:
+        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(rows), disable_web_page_preview=True)
+
+# === 📚 Файли: конкретна категорія ===
+async def files_category(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await guard(update): return
+    q = update.callback_query
+    await q.answer()
+    _, cat = q.data.split(":", 1)
+
+    # список файлів на сервері
     try:
         files = await list_files()
-    except Exception as e:
-        return await update.message.reply_text(f"Помилка отримання списку файлів: {e}")
-    if not files:
-        return await update.message.reply_text("Поки що немає жодного PDF у /files/. Надішліть документ сюди.")
-    rows = [[InlineKeyboardButton(text=f["name"], url=file_url(f["name"]))] for f in files]
-    await update.message.reply_text(
-        "📚 *Файлова бібліотека:*",
+        available = {f["name"] for f in files}
+    except Exception:
+        available = set()
+
+    titles = FILE_CATEGORIES.get(cat, [])
+    buttons = []
+    missing = []
+
+    for title in titles:
+        filename = FILES_DOCS.get(title)
+        if not filename:
+            missing.append(f"⚠️ Немає мапінгу: {title}")
+            continue
+        if filename in available:
+            buttons.append([InlineKeyboardButton(title, url=file_url(filename))])
+        else:
+            missing.append(f"— {title} (файл ще не завантажено)")
+
+    footer = ""
+    if missing:
+        footer = "\n\n_Примітка:_\n" + "\n".join(missing)
+
+    rows = buttons or [[InlineKeyboardButton("Наразі файлів у цій категорії немає", callback_data="noop")]]
+    rows.append([InlineKeyboardButton("⬅️ Назад", callback_data="nav:files"),
+                 InlineKeyboardButton("🏠 Головна", callback_data="nav:home")])
+
+    await q.edit_message_text(
+        text=f"📂 {cat}{footer}",
         parse_mode="Markdown",
         reply_markup=InlineKeyboardMarkup(rows),
         disable_web_page_preview=True
     )
 
-# --- Promo home ---
+# === ⬆️ Промоушен: головне меню ===
 async def promo_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, edit_message=False):
     if not await guard(update): return
     rows = [
@@ -306,7 +360,7 @@ async def promo_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, edit_me
     else:
         await update.message.reply_text(text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(rows))
 
-# --- Promo role selected ---
+# --- Промо-ролі ---
 async def on_promo_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await guard(update): return
     q = update.callback_query
@@ -318,7 +372,7 @@ async def on_promo_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
                  InlineKeyboardButton("🏠 Головна", callback_data="nav:home")])
     await q.edit_message_text(text=f"⬆️ {role}: оберіть розділ", reply_markup=InlineKeyboardMarkup(rows))
 
-# --- Promo tab selected ---
+# --- Промо-вкладки з міні-гідами та кнопками документів ---
 async def on_promo_nav(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await guard(update): return
     q = update.callback_query
@@ -334,16 +388,24 @@ async def on_promo_nav(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await q.edit_message_text(text=header)
 
-    # 2) КНОПКИ З ДОКУМЕНТАМИ
+    # 2) КНОПКИ З ДОКУМЕНТАМИ (лише наявні)
+    try:
+        files = await list_files()
+        available = {f["name"] for f in files}
+    except Exception:
+        available = set()
+
     items = PROMO_MAP.get(role, {}).get(tab, [])
     anchors = PAGE_ANCHORS.get(role, {}).get(tab, {})
     buttons = []
     for title in items:
-        filename = PROMO_DOCS.get(title)
-        if not filename:
-            continue  # файл не завантажено — пропускаємо
+        # джерело може бути як із FILES_DOCS (модулі/довідники), так і з PROMO_DOCS (специфіка ролі)
+        filename = FILES_DOCS.get(title) or PROMO_DOCS.get(title)
+        if not filename or filename not in available:
+            continue
         page = anchors.get(title)
-        buttons.append([InlineKeyboardButton(title, url=file_url(filename, page))])
+        url = file_url(filename, page)
+        buttons.append([InlineKeyboardButton(title, url=url)])
 
     if buttons:
         buttons.append([InlineKeyboardButton("⬅️ Назад", callback_data=f"promo:{role}"),
@@ -366,13 +428,13 @@ async def on_doc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await doc.get_file()
     path = os.path.join("docs", doc.file_name)
     await file.download_to_drive(path)
-    await update.message.reply_text("✅ PDF збережено. Перевірте у 📚 Файли.")
+    await update.message.reply_text("✅ PDF збережено. Перевірте у 📚 Файли або в розділах Промоушен.")
 
 # --- Text buttons ---
 async def on_text_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (update.message.text or "").strip()
     if text == "📚 Файли":
-        return await files_cmd(update, context)
+        return await files_home(update, context)
     if text == "⬆️ Промоушен":
         return await promo_menu(update, context)
 
@@ -383,17 +445,14 @@ async def on_nav(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.answer()
     _, where = q.data.split(":", 1)
     if where == "files":
-        class Dummy: pass
-        dummy_update = Dummy()
-        dummy_update.message = q.message
-        return await files_cmd(dummy_update, context)
+        return await files_home(update, context, as_edit=True)
     if where == "promo":
         return await promo_menu(update, context, edit_message=True)
     if where == "home":
         caption = (
             "👋 Ласкаво просимо до *LC Waikiki Guide Bot*.\n\n"
-            "• **Файли** — усі гайдлайни та інструкції\n"
-            "• **Промоушен** — матеріали програми підвищення (3 позиції)\n\n"
+            "• **Файли** — категорії: *Модулі*, *Довідники*, *Welcome*\n"
+            "• **Промоушен** — програма для 3 позицій (з міні-гайдами)\n\n"
             "Надішліть PDF як документ — я додам його до бібліотеки."
         )
         try:
@@ -412,11 +471,12 @@ def main():
 
     # Команди
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("files", files_cmd))
+    app.add_handler(CommandHandler("files", lambda u, c: files_home(u, c)))
     app.add_handler(CommandHandler("promo", lambda u, c: promo_menu(u, c)))
 
-    # Колбеки (inline)
+    # Inline колбеки
     app.add_handler(CallbackQueryHandler(on_nav, pattern=r"^nav:"))
+    app.add_handler(CallbackQueryHandler(files_category, pattern=r"^files_cat:"))
     app.add_handler(CallbackQueryHandler(on_promo_role, pattern=r"^promo:"))
     app.add_handler(CallbackQueryHandler(on_promo_nav, pattern=r"^promo_nav:"))
 
@@ -425,6 +485,11 @@ def main():
     app.add_handler(MessageHandler(filters.Document.PDF, on_doc))
 
     print("[bot] polling...", flush=True)
+    app.run_polling(drop_pending_updates=True, close_loop=False)
+
+if __name__ == "__main__":
+    main()
+
     app.run_polling(drop_pending_updates=True, close_loop=False)
 
 if __name__ == "__main__":
